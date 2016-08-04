@@ -4,7 +4,7 @@
   :description "An abstraction of OVR using CEPL"
   :author "Graham Marousek <graham.marousek@gmail.com>"
   :license "BSD 2 clause"
-  :depends-on (#:cepl.glop
+  :depends-on (#:cepl.sdl2
 	       #:3b-ovr
                #:temporal-functions
                #:swank

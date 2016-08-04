@@ -4,38 +4,39 @@
 (defparameter *entities* nil)
 
 ;;CEPL code starts here
-(eval-when (:load-toplevel :compile-toplevel :execute)
-    (defun triangle (vertices color normal)
-      (let ((a (values (first vertices)))
-	    (b (values (second vertices)))
-	    (c (values (third vertices))))
-	(list (list (v! a) nil nil)
-	      ;; (list (v! b) (v! color) (v! normal))
-	      ;; (list (v! c) (v! color) (v!  normal))
-	      )
-	))
-  )
+(defun triangle (vertices color normal)
+  (let ((a (values (first vertices)))
+	(b (values (second vertices)))
+	(c (values (third vertices))))
+    (list (list (v! a) (v! color) (v! normal))
+	  (list (v! b) (v! color) (v! normal))
+	  (list (v! c) (v! color) (v!  normal)))))
 
-(defparameter *verts (list (list 1 0 0) (list -1 0 0) (list 0 1 0)))
+(defparameter *verts (list (list 1 0 0 0) (list -1 0 0 0) (list 0 1 0 0)))
 (defparameter *color (list 0 1 0 1))
 (defparameter *normal (list 0 0 1))
 
 (defstruct-g pcn
-  (vertex :vec3 :accessor vert)
+  (position :vec3 :accessor pos)
   (color :vec4 :accessor col)
   (normal :vec3 :accessor norm))
 
-(defun-g vertex ((vertex :vec3))
-  vertex)
+(defun-g vertex ((vertex pcn))
+  (values (v! (pos vertex) 1.0)
+	  (col vertex)
+	  (norm vertex)))
 
-(defun-g color ((color :vec4))
+;; (defun-g color ((color :vec4))
+;;   color)
+
+;; (defun-g normal ((normal :vec3))
+;;   normal)
+
+(defun-g frag ((color :vec4))
   color)
 
-(defun-g normal ((normal :vec3))
-  normal)
-
 (def-g-> render-prog ()
-  #'vertex #'color #'normal)
+  #'vertex #'frag)
 
 (defclass entity ()
   ((e-stream :initform nil :initarg :e-stream :accessor e-stream)
@@ -64,7 +65,7 @@
 (defun step-demo ()
   ;; (step-host)
   ;; (update-repl-link)
-  ;; (clear)				
+  ;; (clear)
   (map nil #'update-entity *entities*)	
   (swap))
 
@@ -82,6 +83,13 @@
    (hud-count :accessor hud-count)
    (hud-texture :accessor hud-texture)
    (font :accessor font)))
+
+(defmethod glop:on-event ((window ovr-window) (event glop:key-event))
+  ;; exit on ESC key
+  (when (glop:pressed event)
+    (case (glop:keysym event)
+      (:escape
+       (cepl.host::shutdown)))))
 
 (defun start (render-data)
   (unwind-protect
@@ -110,11 +118,11 @@
 	     (format t "Tracking configured~%")
 	     #+linux
 	     (when (eq (getf hmd-info :type) :dk2)
-	       (format t "Width: ~s~%Height: ~s" w h))
+	       (format t "Width: ~s~%Height: ~s~%" w h))
 	     (format t "Attempting to open window with resolution ~sx~s at ~s, ~s~%" w h x y)
 	     ;;might want to use make-viewport
 	     (cepl::init w h "OVR with CEPL" t)
-	     (let ((win (make-instance ovr-window)))
+	     (let ((win (make-instance 'ovr-window)))
 	       (setf (slot-value win 'window) cepl.glop::*window*
 		     (slot-value win 'hmd) hmd)
 	       (%ovr::with-configure-rendering eye-render-desc
